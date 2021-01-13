@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"io"
 	"net"
+
+	"github.com/jpillora/go-tcp-proxy/pkg/iscsit"
 )
 
 // Proxy - Manages a Proxy connection, piping data between local and remote.
@@ -24,6 +26,7 @@ type Proxy struct {
 	Nagles    bool
 	Log       Logger
 	OutputHex bool
+	BusyCount int
 }
 
 // New - Create a new Proxy instance. Takes over local connection passed in,
@@ -129,6 +132,27 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			return
 		}
 		b := buff[:n]
+
+		if !islocal {
+			scsi, err := iscsit.ParseHeader(b[:48])
+			if err != nil {
+				p.Log.Warn("error parsing scsi header: %v", err)
+			}
+
+			if scsi != nil && scsi.OpCode == iscsit.OpSCSIResp {
+				if p.BusyCount > 0 {
+					b[3] = 0x08
+				}
+
+				p.BusyCount = p.BusyCount + 1
+				scsi, err = iscsit.ParseHeader(b[:48])
+				if err != nil {
+					p.Log.Warn("error parsing scsi header: %v", err)
+				} else {
+					p.Log.Info("\nResponse in SCSI Resp: %v", scsi.String())
+				}
+			}
+		}
 
 		//execute match
 		if p.Matcher != nil {
