@@ -27,6 +27,7 @@ var (
 	unwrapTLS   = flag.Bool("unwrap-tls", false, "remote connection with TLS exposed unencrypted locally")
 	match       = flag.String("match", "", "match regex (in the form 'regex')")
 	replace     = flag.String("replace", "", "replace regex (in the form 'regex~replacer')")
+	busy        = flag.Int("b", 0, "busy count to inject after login")
 )
 
 func main() {
@@ -89,6 +90,7 @@ func main() {
 			Prefix:      fmt.Sprintf("Connection #%03d ", connid),
 			Color:       *colors,
 		}
+		p.BusyCount = *busy
 
 		go p.Start()
 	}

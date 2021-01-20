@@ -27,6 +27,7 @@ type Proxy struct {
 	Log       Logger
 	OutputHex bool
 	BusyCount int
+	DidLogin  bool
 }
 
 // New - Create a new Proxy instance. Takes over local connection passed in,
@@ -137,20 +138,17 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			scsi, err := iscsit.ParseHeader(b[:48])
 			if err != nil {
 				p.Log.Warn("error parsing scsi header: %v", err)
+			} else {
+				p.Log.Info("\nResponse in SCSI Resp: %v", scsi.String())
 			}
 
 			if scsi != nil && scsi.OpCode == iscsit.OpSCSIResp {
-				if p.BusyCount > 0 {
+				if !p.DidLogin && p.BusyCount > 0 {
 					b[3] = 0x08
 				}
 
-				p.BusyCount = p.BusyCount + 1
-				scsi, err = iscsit.ParseHeader(b[:48])
-				if err != nil {
-					p.Log.Warn("error parsing scsi header: %v", err)
-				} else {
-					p.Log.Info("\nResponse in SCSI Resp: %v", scsi.String())
-				}
+				p.BusyCount--
+				p.DidLogin = true
 			}
 		}
 
