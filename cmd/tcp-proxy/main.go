@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	proxy "github.com/jpillora/go-tcp-proxy"
 )
@@ -28,6 +29,7 @@ var (
 	match       = flag.String("match", "", "match regex (in the form 'regex')")
 	replace     = flag.String("replace", "", "replace regex (in the form 'regex~replacer')")
 	busy        = flag.Int("b", 0, "busy count to inject after login")
+	busyAfter   = flag.String("a", "1ms", "start sending busy responses after this much time (e.g. 30s)")
 )
 
 func main() {
@@ -91,6 +93,12 @@ func main() {
 			Color:       *colors,
 		}
 		p.BusyCount = *busy
+		busyAfter, err := time.ParseDuration(*busyAfter)
+
+		if err != nil {
+			busyAfter = time.Millisecond
+		}
+		p.BusyAfter = time.Now().Add(busyAfter)
 
 		go p.Start()
 	}

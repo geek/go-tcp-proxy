@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"io"
 	"net"
+	"time"
 
 	"github.com/jpillora/go-tcp-proxy/pkg/iscsit"
 )
@@ -28,6 +29,7 @@ type Proxy struct {
 	OutputHex bool
 	BusyCount int
 	DidLogin  bool
+	BusyAfter time.Time
 }
 
 // New - Create a new Proxy instance. Takes over local connection passed in,
@@ -134,7 +136,7 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 		}
 		b := buff[:n]
 
-		if !islocal {
+		if !islocal && time.Now().After(p.BusyAfter) {
 			scsi, err := iscsit.ParseHeader(b[:48])
 			if err != nil {
 				p.Log.Warn("error parsing scsi header: %v", err)
@@ -145,9 +147,9 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			if scsi != nil && scsi.OpCode == iscsit.OpSCSIResp {
 				if !p.DidLogin && p.BusyCount > 0 {
 					b[3] = 0x08
+					p.BusyCount--
 				}
 
-				p.BusyCount--
 				p.DidLogin = true
 			}
 		}
