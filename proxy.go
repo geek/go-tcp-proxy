@@ -24,12 +24,13 @@ type Proxy struct {
 	Replacer func([]byte) []byte
 
 	// Settings
-	Nagles    bool
-	Log       Logger
-	OutputHex bool
-	BusyCount int
-	DidLogin  bool
-	BusyAfter time.Time
+	Nagles             bool
+	Log                Logger
+	OutputHex          bool
+	BusyCount          int
+	DidLogin           bool
+	BusyAfter          time.Time
+	BusyAfterFullCount int
 }
 
 // New - Create a new Proxy instance. Takes over local connection passed in,
@@ -145,7 +146,9 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			}
 
 			if scsi != nil && scsi.OpCode == iscsit.OpSCSIResp {
-				if !p.DidLogin && p.BusyCount > 0 {
+				if p.BusyAfterFullCount > 0 && b[3] == 0x28 {
+					p.BusyAfterFullCount--
+				} else if !p.DidLogin && p.BusyCount > 0 {
 					b[3] = 0x08
 					p.BusyCount--
 				}

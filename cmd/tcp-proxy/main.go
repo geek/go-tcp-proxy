@@ -18,18 +18,19 @@ var (
 	connid  = uint64(0)
 	logger  proxy.ColorLogger
 
-	localAddr   = flag.String("l", ":9999", "local address")
-	remoteAddr  = flag.String("r", "localhost:80", "remote address")
-	verbose     = flag.Bool("v", false, "display server actions")
-	veryverbose = flag.Bool("vv", false, "display server actions and all tcp data")
-	nagles      = flag.Bool("n", false, "disable nagles algorithm")
-	hex         = flag.Bool("h", false, "output hex")
-	colors      = flag.Bool("c", false, "output ansi colors")
-	unwrapTLS   = flag.Bool("unwrap-tls", false, "remote connection with TLS exposed unencrypted locally")
-	match       = flag.String("match", "", "match regex (in the form 'regex')")
-	replace     = flag.String("replace", "", "replace regex (in the form 'regex~replacer')")
-	busy        = flag.Int("b", 0, "busy count to inject after login")
-	busyAfter   = flag.String("a", "1ms", "start sending busy responses after this much time (e.g. 30s)")
+	localAddr          = flag.String("l", ":9999", "local address")
+	remoteAddr         = flag.String("r", "localhost:80", "remote address")
+	verbose            = flag.Bool("v", false, "display server actions")
+	veryverbose        = flag.Bool("vv", false, "display server actions and all tcp data")
+	nagles             = flag.Bool("n", false, "disable nagles algorithm")
+	hex                = flag.Bool("h", false, "output hex")
+	colors             = flag.Bool("c", false, "output ansi colors")
+	unwrapTLS          = flag.Bool("unwrap-tls", false, "remote connection with TLS exposed unencrypted locally")
+	match              = flag.String("match", "", "match regex (in the form 'regex')")
+	replace            = flag.String("replace", "", "replace regex (in the form 'regex~replacer')")
+	busy               = flag.Int("b", 0, "busy count to inject after login")
+	busyAfter          = flag.String("a", "1ms", "start sending busy responses after this much time (e.g. 30s)")
+	busyAfterFullCount = flag.Int("f", 4, "start sending busy responses after this many TASK SET FULL responses")
 )
 
 func main() {
@@ -99,6 +100,7 @@ func main() {
 			busyAfter = time.Millisecond
 		}
 		p.BusyAfter = time.Now().Add(busyAfter)
+		p.BusyAfterFullCount = *busyAfterFullCount
 
 		go p.Start()
 	}
